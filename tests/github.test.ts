@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   countMergedTodayWithKnownBug,
+  extractTicketIdentifier,
+  summarizeCheckRuns,
   summarizePullRequests,
   type GitHubPullRequest,
 } from "@/lib/github";
@@ -36,5 +38,30 @@ describe("GitHub summary", () => {
     expect(
       countMergedTodayWithKnownBug([merged], new Date("2026-10-11T20:00:00Z")),
     ).toBe(1);
+  });
+
+  it("extracts a Linear identifier from the branch or title", () => {
+    expect(
+      extractTicketIdentifier({
+        title: "Build the factory floor",
+        head: { ref: "droid/BOOTH-12-factory-floor", sha: "abc" },
+      }),
+    ).toBe("BOOTH-12");
+    expect(
+      extractTicketIdentifier({ title: "BOOTH-7: Spotlight ticket" }),
+    ).toBe("BOOTH-7");
+  });
+
+  it("reduces check runs to a wall-friendly state", () => {
+    expect(summarizeCheckRuns([])).toBe("none");
+    expect(
+      summarizeCheckRuns([{ status: "in_progress", conclusion: null }]),
+    ).toBe("pending");
+    expect(
+      summarizeCheckRuns([{ status: "completed", conclusion: "success" }]),
+    ).toBe("passed");
+    expect(
+      summarizeCheckRuns([{ status: "completed", conclusion: "failure" }]),
+    ).toBe("failed");
   });
 });

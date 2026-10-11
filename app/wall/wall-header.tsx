@@ -7,6 +7,7 @@ const fallback: GitHubSummary = {
   configured: false,
   mergedToday: 0,
   latest: null,
+  ticketPullRequests: [],
 };
 
 export function WallHeader() {

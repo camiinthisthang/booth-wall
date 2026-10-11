@@ -13,6 +13,7 @@ export interface BoothIssue {
   identifier: string;
   title: string;
   createdAt: string;
+  updatedAt: string;
   state: BoardLane;
   stateId: string;
   labels: string[];
@@ -24,6 +25,7 @@ type LinearIssueNode = {
   identifier: string;
   title: string;
   createdAt: string;
+  updatedAt: string;
   state: { id: string; name: string; type?: string };
   labels?: { nodes?: Array<{ name: string }> };
   assignee?: { name?: string } | null;
@@ -95,7 +97,7 @@ export async function getBoothIssues(): Promise<BoothIssue[]> {
       team(id: $teamId) {
         issues(first: 100, orderBy: createdAt) {
           nodes {
-            id identifier title createdAt
+            id identifier title createdAt updatedAt
             state { id name type }
             labels { nodes { name } }
             assignee { name }
@@ -112,6 +114,7 @@ export async function getBoothIssues(): Promise<BoothIssue[]> {
     identifier: issue.identifier,
     title: issue.title,
     createdAt: issue.createdAt,
+    updatedAt: issue.updatedAt,
     state: normalizeLinearState(issue.state.name, issue.state.type),
     stateId: issue.state.id,
     labels: issue.labels?.nodes?.map((label) => label.name) ?? [],
