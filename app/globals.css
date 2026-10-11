@@ -414,11 +414,60 @@ input {
   letter-spacing: -0.07em;
 }
 
-.vote-header > p:last-child {
-  max-width: 34rem;
+.vote-intro {
+  max-width: 48rem;
+  margin: 0;
   color: var(--soft);
   font-size: clamp(1rem, 2.2vw, 1.35rem);
   line-height: 1.45;
+}
+
+.installation-flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin: clamp(2rem, 5vw, 3.5rem) 0 1.25rem;
+  padding: 1px;
+  background: var(--line);
+  list-style: none;
+}
+
+.installation-flow li {
+  min-height: 8rem;
+  padding: 1.1rem;
+  background: var(--panel);
+}
+
+.installation-flow span,
+.installation-flow strong {
+  display: block;
+}
+
+.installation-flow span {
+  margin-bottom: 2rem;
+  color: var(--signal-bright);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+}
+
+.installation-flow strong {
+  max-width: 12rem;
+  font-size: clamp(0.9rem, 1.7vw, 1.1rem);
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.shipped-today {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0;
+  color: #aaa;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .vote-alert {
@@ -525,6 +574,21 @@ input {
 
   .vote-header h1 {
     font-size: clamp(3rem, 17vw, 5.2rem);
+  }
+
+  .installation-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .installation-flow li {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    align-items: center;
+    min-height: auto;
+  }
+
+  .installation-flow span {
+    margin: 0;
   }
 
   .ballot-card {
