@@ -16,6 +16,10 @@ type IssueResponse = {
   message?: string;
 };
 
+type GitHubSummary = {
+  mergedToday: number;
+};
+
 const VOTER_KEY = "booth-voter-id";
 const VOTED_KEY = "booth-voted-issues";
 
@@ -33,6 +37,7 @@ export function Vote() {
   const [error, setError] = useState("");
   const [voted, setVoted] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<Set<string>>(new Set());
+  const [mergedToday, setMergedToday] = useState(0);
 
   useEffect(() => {
     const savedVoteTimer = window.setTimeout(() => {
@@ -45,6 +50,13 @@ export function Vote() {
         setData((await response.json()) as IssueResponse);
       })
       .catch(() => setError("The ballot is temporarily unavailable."));
+    fetch("/api/github/summary", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error();
+        const summary = (await response.json()) as GitHubSummary;
+        setMergedToday(summary.mergedToday);
+      })
+      .catch(() => undefined);
     return () => window.clearTimeout(savedVoteTimer);
   }, []);
 
@@ -118,8 +130,23 @@ export function Vote() {
       <header className="vote-header">
         <a className="factory-mark compact" href="/wall"><span>F</span> FACTORY</a>
         <p className="eyebrow">YOU SET THE PRIORITY</p>
-        <h1>WHAT SHOULD<br />WE BUILD NEXT?</h1>
-        <p>Pick the one idea you want to see move onto the floor.</p>
+        <h1 aria-label="What should we build next?">WHAT SHOULD<br />WE BUILD NEXT?</h1>
+        <p className="vote-intro">
+          Every idea below is a real ticket. Vote, and an autonomous Droid takes
+          it from there: it picks the ticket up from Linear, writes the code,
+          runs the tests, and ships it to the wall. Nobody at this booth touches
+          a keyboard.
+        </p>
+        <ol className="installation-flow" aria-label="How your vote reaches the wall">
+          <li><span>01</span><strong>You vote</strong></li>
+          <li><span>02</span><strong>A Droid claims the ticket</strong></li>
+          <li><span>03</span><strong>Code, tests, and checks</strong></li>
+          <li><span>04</span><strong>Live on the wall</strong></li>
+        </ol>
+        <p className="shipped-today" aria-live="polite">
+          <span className="signal-dot" />
+          This booth has shipped {mergedToday} changes today
+        </p>
       </header>
       {error && <div className="vote-alert" role="alert">{error}</div>}
       {!data && !error && <div className="system-state">Loading the live ballot...</div>}
