@@ -11,7 +11,9 @@ type BoardResponse = {
 };
 
 type ViewTransitionDocument = Document & {
-  startViewTransition?: (update: () => void) => unknown;
+  startViewTransition?: (update: () => void) => {
+    finished: Promise<void>;
+  };
 };
 
 export function Board() {
@@ -36,9 +38,12 @@ export function Board() {
       if (
         hasSnapshot.current &&
         transitionDocument.startViewTransition &&
+        document.visibilityState === "visible" &&
         !window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ) {
-        transitionDocument.startViewTransition(applySnapshot);
+        transitionDocument
+          .startViewTransition(applySnapshot)
+          .finished.catch(() => undefined);
       } else {
         applySnapshot();
       }
