@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("wall renders Ticket to Live without runtime errors", async ({
+test("wall renders Ticket to Live and Live Diff without runtime errors", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -9,6 +9,7 @@ test("wall renders Ticket to Live without runtime errors", async ({
   await expect(
     page.getByRole("heading", { name: "THE BOOTH THAT BUILDS ITSELF" }),
   ).toBeVisible();
+  await expect(page.getByRole("region", { name: "Live Diff" })).toBeVisible();
   await expect(
     page.getByRole("region", { name: "Ticket to Live" }),
   ).toBeVisible();
