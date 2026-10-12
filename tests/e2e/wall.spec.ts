@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("wall renders Live Diff without runtime errors", async ({
+test("wall renders Ticket to Live and Live Diff without runtime errors", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -10,6 +10,9 @@ test("wall renders Live Diff without runtime errors", async ({
     page.getByRole("heading", { name: "THE BOOTH THAT BUILDS ITSELF" }),
   ).toBeVisible();
   await expect(page.getByRole("region", { name: "Live Diff" })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Ticket to Live" }),
+  ).toBeVisible();
   await expect(page.getByText("Factory Floor", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("region", { name: /Backlog, \d+ tickets/ }),
