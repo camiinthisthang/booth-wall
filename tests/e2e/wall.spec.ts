@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("wall renders its title and construction grid without runtime errors", async ({
+test("wall renders all three replacement features without runtime errors", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -9,7 +9,13 @@ test("wall renders its title and construction grid without runtime errors", asyn
   await expect(
     page.getByRole("heading", { name: "THE BOOTH THAT BUILDS ITSELF" }),
   ).toBeVisible();
-  await expect(page.getByText("Under construction").first()).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Caught at the Gate" }),
+  ).toBeVisible();
+  await expect(page.getByRole("region", { name: "Live Diff" })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Ticket to Live" }),
+  ).toBeVisible();
   await expect(page.getByText("Factory Floor", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("region", { name: /Backlog, \d+ tickets/ }),

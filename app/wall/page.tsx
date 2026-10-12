@@ -1,4 +1,5 @@
 import { featureRegistry } from "@/features/registry";
+import { MergeCelebrationOverlay } from "@/features/CaughtAtGate";
 import { WallHeader } from "./wall-header";
 
 export default function WallPage() {
@@ -28,6 +29,7 @@ export default function WallPage() {
           </nav>
         </footer>
       </section>
+      <MergeCelebrationOverlay />
     </main>
   );
 }
