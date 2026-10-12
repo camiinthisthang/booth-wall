@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 type VoteIssue = {
   id: string;
@@ -20,8 +20,59 @@ type GitHubSummary = {
   mergedToday: number;
 };
 
+type ShareStatus =
+  | { kind: "idle" }
+  | { kind: "sharing" }
+  | { kind: "shared" }
+  | { kind: "copied" }
+  | { kind: "canceled" }
+  | { kind: "manual"; url: string };
+
 const VOTER_KEY = "booth-voter-id";
 const VOTED_KEY = "booth-voted-issues";
+const SHARE_TITLE = "Vote on what Factory builds next";
+const SHARE_TEXT = "Pick the next feature an autonomous Droid ships to the booth wall.";
+const SHARE_NOTICE_MS = 5000;
+
+const shareRowStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "0.75rem 1rem",
+  marginTop: "1.5rem",
+};
+
+const shareButtonStyle: CSSProperties = {
+  minHeight: "3.3rem",
+  padding: "0 1.4rem",
+  border: "1px solid var(--signal)",
+  background: "transparent",
+  color: "var(--paper)",
+  fontSize: "0.78rem",
+  fontWeight: 900,
+  letterSpacing: "0.09em",
+  cursor: "pointer",
+};
+
+const shareStatusStyle: CSSProperties = {
+  flex: "1 1 14rem",
+  margin: 0,
+  color: "var(--soft)",
+  fontSize: "0.9rem",
+  lineHeight: 1.4,
+};
+
+const shareLinkStyle: CSSProperties = {
+  display: "block",
+  width: "100%",
+  marginTop: "0.5rem",
+  padding: "0.65rem 0.75rem",
+  border: "1px solid var(--line)",
+  background: "var(--panel)",
+  color: "var(--paper)",
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+  fontSize: "0.85rem",
+};
 
 function browserVoterId() {
   let id = localStorage.getItem(VOTER_KEY);
@@ -32,12 +83,67 @@ function browserVoterId() {
   return id;
 }
 
+function ballotUrl() {
+  return new URL("/vote", window.location.origin).toString();
+}
+
+function isAbort(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { name?: unknown }).name === "AbortError"
+  );
+}
+
+async function copyToClipboard(text: string) {
+  if (!window.isSecureContext || !navigator.clipboard?.writeText) return false;
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function shareMessage(status: ShareStatus) {
+  switch (status.kind) {
+    case "sharing":
+      return "Opening share options...";
+    case "shared":
+      return "Thanks for sharing the ballot.";
+    case "copied":
+      return "Ballot link copied. Paste it anywhere to invite another vote.";
+    case "canceled":
+      return "Share canceled. Nothing was sent.";
+    case "manual":
+      return "Sharing is not available here. Copy this link to share the ballot:";
+    default:
+      return "";
+  }
+}
+
 export function Vote() {
   const [data, setData] = useState<IssueResponse | null>(null);
   const [error, setError] = useState("");
   const [voted, setVoted] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [mergedToday, setMergedToday] = useState(0);
+  const [shareStatus, setShareStatus] = useState<ShareStatus>({ kind: "idle" });
+
+  useEffect(() => {
+    if (
+      shareStatus.kind !== "shared" &&
+      shareStatus.kind !== "copied" &&
+      shareStatus.kind !== "canceled"
+    ) {
+      return;
+    }
+    const timer = window.setTimeout(
+      () => setShareStatus({ kind: "idle" }),
+      SHARE_NOTICE_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [shareStatus]);
 
   useEffect(() => {
     const savedVoteTimer = window.setTimeout(() => {
@@ -59,6 +165,36 @@ export function Vote() {
       .catch(() => undefined);
     return () => window.clearTimeout(savedVoteTimer);
   }, []);
+
+  async function shareBallot() {
+    if (shareStatus.kind === "sharing") return;
+    const url = ballotUrl();
+    const payload: ShareData = { title: SHARE_TITLE, text: SHARE_TEXT, url };
+    setShareStatus({ kind: "sharing" });
+
+    const canNativeShare =
+      typeof navigator.share === "function" &&
+      (typeof navigator.canShare !== "function" || navigator.canShare(payload));
+    if (canNativeShare) {
+      try {
+        await navigator.share(payload);
+        setShareStatus({ kind: "shared" });
+        return;
+      } catch (shareError) {
+        if (isAbort(shareError)) {
+          setShareStatus({ kind: "canceled" });
+          return;
+        }
+        // Any other rejection (for example NotAllowedError) falls back to copying.
+      }
+    }
+
+    if (await copyToClipboard(url)) {
+      setShareStatus({ kind: "copied" });
+    } else {
+      setShareStatus({ kind: "manual", url });
+    }
+  }
 
   async function castVote(issueId: string) {
     if (!data || voted.has(issueId) || pending.has(issueId)) return;
@@ -147,6 +283,30 @@ export function Vote() {
           <span className="signal-dot" />
           This booth has shipped {mergedToday} changes today
         </p>
+        <div style={shareRowStyle}>
+          <button
+            type="button"
+            style={shareButtonStyle}
+            onClick={shareBallot}
+            disabled={shareStatus.kind === "sharing"}
+            aria-describedby="ballot-share-status"
+          >
+            SHARE THIS BALLOT
+          </button>
+          <div id="ballot-share-status" role="status" style={shareStatusStyle}>
+            {shareMessage(shareStatus)}
+            {shareStatus.kind === "manual" && (
+              <input
+                type="text"
+                readOnly
+                aria-label="Ballot link"
+                value={shareStatus.url}
+                style={shareLinkStyle}
+                onFocus={(event) => event.currentTarget.select()}
+              />
+            )}
+          </div>
+        </div>
       </header>
       {error && <div className="vote-alert" role="alert">{error}</div>}
       {!data && !error && <div className="system-state">Loading the live ballot...</div>}
