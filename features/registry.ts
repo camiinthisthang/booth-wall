@@ -3,8 +3,8 @@ import { AmbientParticles } from "./AmbientParticles";
 import { AnimatedWordmark } from "./AnimatedWordmark";
 import { BoothStatus } from "./BoothStatus";
 import { BuildPulse } from "./BuildPulse";
+import { CaughtAtGate } from "./CaughtAtGate";
 import { DroidFacts } from "./DroidFacts";
-import { MergeConfetti } from "./MergeConfetti";
 import { PixelMascot } from "./PixelMascot";
 import { ReactionMeter } from "./ReactionMeter";
 import { ShippedTicker } from "./ShippedTicker";
@@ -23,7 +23,7 @@ export const featureRegistry: FeatureRegistration[] = [
   { key: "wordmark", title: "Animated Factory wordmark", placement: { column: "1 / 3", row: "1" }, Component: AnimatedWordmark },
   { key: "visitor-clock", title: "Visitor clock", placement: { column: "3", row: "1" }, Component: VisitorClock },
   { key: "droid-facts", title: "Droid facts", placement: { column: "4", row: "1" }, Component: DroidFacts },
-  { key: "merge-confetti", title: "Merge confetti", placement: { column: "5", row: "1" }, Component: MergeConfetti },
+  { key: "caught-at-gate", title: "Caught at the Gate", placement: { column: "5", row: "1" }, Component: CaughtAtGate },
   { key: "build-pulse", title: "Build pulse", placement: { column: "1", row: "2" }, Component: BuildPulse },
   { key: "ticket-spotlight", title: "Ticket spotlight", placement: { column: "2 / 4", row: "2" }, Component: TicketSpotlight },
   { key: "ambient-particles", title: "Ambient particles", placement: { column: "4 / 6", row: "2" }, Component: AmbientParticles },
