@@ -4,11 +4,11 @@ import { AnimatedWordmark } from "./AnimatedWordmark";
 import { BoothStatus } from "./BoothStatus";
 import { BuildPulse } from "./BuildPulse";
 import { DroidFacts } from "./DroidFacts";
+import { LiveDiff } from "./LiveDiff";
 import { MergeConfetti } from "./MergeConfetti";
 import { PixelMascot } from "./PixelMascot";
 import { ReactionMeter } from "./ReactionMeter";
 import { ShippedTicker } from "./ShippedTicker";
-import { SoundVisualizer } from "./SoundVisualizer";
 import { TicketSpotlight } from "./TicketSpotlight";
 import { VisitorClock } from "./VisitorClock";
 
@@ -30,6 +30,6 @@ export const featureRegistry: FeatureRegistration[] = [
   { key: "shipped-ticker", title: "Shipped ticker", placement: { column: "1 / 3", row: "3" }, Component: ShippedTicker },
   { key: "booth-status", title: "Booth status", placement: { column: "3", row: "3" }, Component: BoothStatus },
   { key: "reaction-meter", title: "Reaction meter", placement: { column: "4", row: "3" }, Component: ReactionMeter },
-  { key: "sound-visualizer", title: "Sound visualizer", placement: { column: "5", row: "3" }, Component: SoundVisualizer },
+  { key: "live-diff", title: "Live Diff", placement: { column: "5", row: "3" }, Component: LiveDiff },
   { key: "factory-floor", title: "Factory Floor", placement: { column: "1 / 6", row: "4" }, Component: PixelMascot },
 ];
