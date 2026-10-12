@@ -31,5 +31,5 @@ export const featureRegistry: FeatureRegistration[] = [
   { key: "booth-status", title: "Booth status", placement: { column: "3", row: "3" }, Component: BoothStatus },
   { key: "reaction-meter", title: "Reaction meter", placement: { column: "4", row: "3" }, Component: ReactionMeter },
   { key: "sound-visualizer", title: "Sound visualizer", placement: { column: "5", row: "3" }, Component: SoundVisualizer },
-  { key: "pixel-mascot", title: "Pixel mascot", placement: { column: "1 / 6", row: "4" }, Component: PixelMascot },
+  { key: "factory-floor", title: "Factory Floor", placement: { column: "1 / 6", row: "4" }, Component: PixelMascot },
 ];

@@ -2,9 +2,26 @@ export interface GitHubPullRequest {
   number: number;
   title: string;
   html_url: string;
+  state?: "open" | "closed";
+  created_at?: string;
   merged_at: string | null;
   updated_at: string;
+  head?: { ref: string; sha: string };
   user: { login: string } | null;
+}
+
+export type GitHubCheckState = "none" | "pending" | "passed" | "failed";
+
+export interface TicketPullRequest {
+  identifier: string;
+  number: number;
+  title: string;
+  url: string;
+  state: "open" | "merged";
+  checks: GitHubCheckState;
+  createdAt: string;
+  updatedAt: string;
+  mergedAt: string | null;
 }
 
 export interface GitHubSummary {
@@ -17,11 +34,56 @@ export interface GitHubSummary {
     author: string;
     mergedAt: string;
   } | null;
+  ticketPullRequests: TicketPullRequest[];
   message?: string;
 }
 
+type GitHubCheckRun = {
+  status: "queued" | "in_progress" | "completed" | "waiting" | "pending";
+  conclusion:
+    | "success"
+    | "failure"
+    | "neutral"
+    | "cancelled"
+    | "skipped"
+    | "timed_out"
+    | "action_required"
+    | "startup_failure"
+    | "stale"
+    | null;
+};
+
 function sameUtcDay(value: string, now: Date): boolean {
   return value.slice(0, 10) === now.toISOString().slice(0, 10);
+}
+
+export function extractTicketIdentifier(
+  pull: Pick<GitHubPullRequest, "title" | "head">,
+): string | null {
+  const source = `${pull.head?.ref ?? ""} ${pull.title}`;
+  return source.match(/\b([A-Z][A-Z0-9]{1,9}-\d+)\b/i)?.[1].toUpperCase() ?? null;
+}
+
+export function summarizeCheckRuns(
+  runs: GitHubCheckRun[],
+): GitHubCheckState {
+  if (runs.length === 0) return "none";
+  if (runs.some((run) => run.status !== "completed")) return "pending";
+  if (
+    runs.some((run) =>
+      [
+        "failure",
+        "cancelled",
+        "timed_out",
+        "action_required",
+        "startup_failure",
+        "stale",
+      ].includes(run.conclusion ?? ""),
+    )
+  ) {
+    return "failed";
+  }
+  return "passed";
 }
 
 // Known BOOTH bug: a PR merged and updated today is counted twice.
@@ -61,7 +123,23 @@ export function summarizePullRequests(
           mergedAt: latest.merged_at!,
         }
       : null,
+    ticketPullRequests: [],
   };
+}
+
+async function getPullRequestChecks(
+  repository: string,
+  pull: GitHubPullRequest,
+  headers: HeadersInit,
+): Promise<GitHubCheckState> {
+  if (pull.state !== "open" || !pull.head?.sha) return "none";
+  const response = await fetch(
+    `https://api.github.com/repos/${repository}/commits/${pull.head.sha}/check-runs?per_page=100`,
+    { headers, cache: "no-store" },
+  );
+  if (!response.ok) return "none";
+  const payload = (await response.json()) as { check_runs?: GitHubCheckRun[] };
+  return summarizeCheckRuns(payload.check_runs ?? []);
 }
 
 export async function getGitHubSummary(): Promise<GitHubSummary> {
@@ -71,6 +149,7 @@ export async function getGitHubSummary(): Promise<GitHubSummary> {
       configured: false,
       mergedToday: 0,
       latest: null,
+      ticketPullRequests: [],
       message: "GitHub summary is not configured",
     };
   }
@@ -82,9 +161,35 @@ export async function getGitHubSummary(): Promise<GitHubSummary> {
     headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   }
   const response = await fetch(
-    `https://api.github.com/repos/${repository}/pulls?state=closed&sort=updated&direction=desc&per_page=100`,
+    `https://api.github.com/repos/${repository}/pulls?state=all&sort=updated&direction=desc&per_page=100`,
     { headers, cache: "no-store" },
   );
   if (!response.ok) throw new Error(`GitHub request failed (${response.status})`);
-  return summarizePullRequests((await response.json()) as GitHubPullRequest[]);
+  const pulls = (await response.json()) as GitHubPullRequest[];
+  const summary = summarizePullRequests(pulls);
+  const ticketPulls = pulls
+    .map((pull) => ({ pull, identifier: extractTicketIdentifier(pull) }))
+    .filter(
+      (
+        entry,
+      ): entry is { pull: GitHubPullRequest; identifier: string } =>
+        entry.identifier !== null &&
+        (entry.pull.state === "open" || entry.pull.merged_at !== null),
+    )
+    .slice(0, 12);
+
+  summary.ticketPullRequests = await Promise.all(
+    ticketPulls.map(async ({ pull, identifier }) => ({
+      identifier,
+      number: pull.number,
+      title: pull.title,
+      url: pull.html_url,
+      state: pull.merged_at ? "merged" : "open",
+      checks: await getPullRequestChecks(repository, pull, headers),
+      createdAt: pull.created_at ?? pull.updated_at,
+      updatedAt: pull.updated_at,
+      mergedAt: pull.merged_at,
+    })),
+  );
+  return summary;
 }

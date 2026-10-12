@@ -11,6 +11,7 @@ export async function GET() {
         configured: true,
         mergedToday: 0,
         latest: null,
+        ticketPullRequests: [],
         message: "GitHub summary is temporarily unavailable",
       },
       { status: 502 },
