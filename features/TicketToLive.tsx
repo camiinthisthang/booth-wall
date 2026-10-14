@@ -73,16 +73,24 @@ export function TicketToLive() {
       aria-label="Ticket to Live"
       style={{
         height: "100%",
-        display: "grid",
-        gridTemplateRows: "auto 1fr auto",
-        gap: "0.45em",
-        padding: "4.5% 5.5%",
+        padding: 0,
         border: `1px solid ${current ? "#ff4b24" : "#262626"}`,
         background: "#0d0d0d",
         color: "#f2efe7",
         overflow: "hidden",
+        containerType: "size",
       }}
     >
+      <div
+        style={{
+          height: "100%",
+          display: "grid",
+          gridTemplateRows: "auto 1fr auto",
+          gap: "0.45em",
+          padding: "5cqh 5.5cqw",
+          overflow: "hidden",
+        }}
+      >
       <div
         style={{
           display: "flex",
@@ -134,7 +142,7 @@ export function TicketToLive() {
               style={{
                 margin: 0,
                 fontFamily: mono,
-                fontSize: "clamp(1.55rem, min(3.6vw, 5.9vh), 6rem)",
+                fontSize: "clamp(1.2rem, 30cqh, 6rem)",
                 fontWeight: 700,
                 lineHeight: 0.95,
                 letterSpacing: "-0.055em",
@@ -147,8 +155,8 @@ export function TicketToLive() {
             </p>
             <p
               style={{
-                margin: "0.45em 0 0",
-                fontSize: "clamp(0.58rem, min(0.96vw, 1.7vh), 1.8rem)",
+                margin: "0.35em 0 0",
+                fontSize: "clamp(0.55rem, 8cqh, 1.8rem)",
                 lineHeight: 1.2,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -202,6 +210,7 @@ export function TicketToLive() {
               : "No finish yet"
           }
         />
+      </div>
       </div>
     </div>
   );
