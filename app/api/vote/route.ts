@@ -19,17 +19,30 @@ export async function POST(request: Request) {
   }
 
   try {
-    const isBacklogIssue = (await getBoothIssues()).some(
-      (issue) => issue.id === input.issueId && issue.state === "Backlog",
+    const issue = (await getBoothIssues()).find(
+      (candidate) =>
+        candidate.id === input.issueId && candidate.state === "Backlog",
     );
-    if (!isBacklogIssue) {
+    if (!issue) {
       return Response.json({ error: "Issue is not open for voting" }, { status: 404 });
     }
     const store = getVoteStore();
-    const accepted = await store.addVote(input.issueId, input.voterId);
+    const timestamp = new Date().toISOString();
+    const { accepted, count } = await store.addVoteEvent(
+      input.issueId,
+      input.voterId,
+      {
+        id: crypto.randomUUID(),
+        type: "vote",
+        name: input.screenName,
+        ticketId: issue.identifier,
+        ticketTitle: issue.title,
+        timestamp,
+      },
+    );
     return Response.json({
       accepted,
-      count: await store.count(input.issueId),
+      count,
       message: accepted ? "Vote counted" : "You already voted for this issue",
     });
   } catch {

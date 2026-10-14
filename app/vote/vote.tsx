@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
+import {
+  DEFAULT_SCREEN_NAME,
+  MAX_SCREEN_NAME_LENGTH,
+  sanitizeScreenName,
+} from "@/lib/vote-events";
 
 type VoteIssue = {
   id: string;
@@ -30,6 +35,7 @@ type ShareStatus =
 
 const VOTER_KEY = "booth-voter-id";
 const VOTED_KEY = "booth-voted-issues";
+const SCREEN_NAME_KEY = "booth-screen-name";
 const SHARE_TITLE = "Vote on what Factory builds next";
 const SHARE_TEXT = "Pick the next feature an autonomous Droid ships to the booth wall.";
 const SHARE_NOTICE_MS = 5000;
@@ -72,6 +78,23 @@ const shareLinkStyle: CSSProperties = {
   color: "var(--paper)",
   fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
   fontSize: "0.85rem",
+};
+
+const screenNameStyle: CSSProperties = {
+  display: "grid",
+  gap: "0.45rem",
+  maxWidth: "24rem",
+  marginTop: "1.5rem",
+};
+
+const screenNameInputStyle: CSSProperties = {
+  minHeight: "3.3rem",
+  padding: "0 0.9rem",
+  border: "1px solid var(--line)",
+  background: "var(--panel)",
+  color: "var(--paper)",
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+  fontSize: "1rem",
 };
 
 function browserVoterId() {
@@ -128,6 +151,7 @@ export function Vote() {
   const [voted, setVoted] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [mergedToday, setMergedToday] = useState(0);
+  const [screenName, setScreenName] = useState(DEFAULT_SCREEN_NAME);
   const [shareStatus, setShareStatus] = useState<ShareStatus>({ kind: "idle" });
 
   useEffect(() => {
@@ -149,6 +173,10 @@ export function Vote() {
     const savedVoteTimer = window.setTimeout(() => {
       const saved = JSON.parse(localStorage.getItem(VOTED_KEY) ?? "[]") as string[];
       setVoted(new Set(saved));
+      const savedName = localStorage.getItem(SCREEN_NAME_KEY);
+      if (savedName !== null) {
+        setScreenName(sanitizeScreenName(savedName));
+      }
     }, 0);
     fetch("/api/issues", { cache: "no-store" })
       .then(async (response) => {
@@ -213,10 +241,17 @@ export function Vote() {
     });
 
     try {
+      const filteredName = sanitizeScreenName(screenName);
+      setScreenName(filteredName);
+      localStorage.setItem(SCREEN_NAME_KEY, filteredName);
       const response = await fetch("/api/vote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ issueId, voterId: browserVoterId() }),
+        body: JSON.stringify({
+          issueId,
+          voterId: browserVoterId(),
+          screenName: filteredName,
+        }),
       });
       const result = (await response.json()) as { count?: number; error?: string };
       if (!response.ok || typeof result.count !== "number") {
@@ -283,6 +318,39 @@ export function Vote() {
           <span className="signal-dot" />
           This booth has shipped {mergedToday} changes today
         </p>
+        <label style={screenNameStyle}>
+          <span
+            style={{
+              color: "var(--signal-bright)",
+              fontSize: "0.72rem",
+              fontWeight: 900,
+              letterSpacing: "0.12em",
+            }}
+          >
+            SCREEN NAME <span style={{ color: "var(--soft)" }}>OPTIONAL</span>
+          </span>
+          <input
+            type="text"
+            maxLength={MAX_SCREEN_NAME_LENGTH}
+            value={screenName}
+            onChange={(event) => {
+              const value = event.currentTarget.value;
+              setScreenName(value);
+              localStorage.setItem(SCREEN_NAME_KEY, value);
+            }}
+            onBlur={() => {
+              const filtered = sanitizeScreenName(screenName);
+              setScreenName(filtered);
+              localStorage.setItem(SCREEN_NAME_KEY, filtered);
+            }}
+            placeholder={DEFAULT_SCREEN_NAME}
+            autoComplete="nickname"
+            style={screenNameInputStyle}
+          />
+          <span style={{ color: "var(--soft)", fontSize: "0.78rem" }}>
+            Shown on the live wall. Maximum {MAX_SCREEN_NAME_LENGTH} characters.
+          </span>
+        </label>
         <div style={shareRowStyle}>
           <button
             type="button"

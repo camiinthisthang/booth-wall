@@ -98,6 +98,16 @@ export async function GET(request: Request) {
     }
     await promoteAndReset(candidate, promoteLinearIssue, (id) => store.clear(id));
     await store.setLastPromotion(now);
+    const promotedIssue = backlog.find((issue) => issue.id === candidate.id);
+    if (promotedIssue) {
+      await store.recordEvent({
+        id: crypto.randomUUID(),
+        type: "promotion",
+        ticketId: promotedIssue.identifier,
+        ticketTitle: promotedIssue.title,
+        timestamp: new Date(now).toISOString(),
+      });
+    }
     const receipt = buildPromotionReceipt(
       candidate,
       now,

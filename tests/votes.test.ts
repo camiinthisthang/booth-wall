@@ -21,4 +21,35 @@ describe("votes", () => {
     expect(await store.addVote(issueId, "browser-0002")).toBe(true);
     expect(await store.count(issueId)).toBe(2);
   });
+
+  it("records one event and one daily total for an accepted vote", async () => {
+    const store = getVoteStore();
+    const issueId = `event-test-${crypto.randomUUID()}`;
+    const timestamp = new Date().toISOString();
+    const first = await store.addVoteEvent(issueId, "browser-1001", {
+      id: `vote-${issueId}`,
+      type: "vote",
+      name: "maya",
+      ticketId: "BOOTH-21",
+      ticketTitle: "Night Shift",
+      timestamp,
+    });
+    const duplicate = await store.addVoteEvent(issueId, "browser-1001", {
+      id: `duplicate-${issueId}`,
+      type: "vote",
+      name: "maya",
+      ticketId: "BOOTH-21",
+      ticketTitle: "Night Shift",
+      timestamp,
+    });
+
+    expect(first).toEqual({ accepted: true, count: 1 });
+    expect(duplicate).toEqual({ accepted: false, count: 1 });
+    expect(
+      (await store.getEvents()).filter((event) => event.ticketId === "BOOTH-21"),
+    ).toContainEqual(expect.objectContaining({ id: `vote-${issueId}` }));
+    expect(await store.getVoteTotal(new Date(timestamp).getTime())).toBeGreaterThan(
+      0,
+    );
+  });
 });
