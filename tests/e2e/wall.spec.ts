@@ -10,7 +10,7 @@ test("wall renders replacement features and pixel assembly line without runtime 
     page.getByRole("heading", { name: "THE BOOTH THAT BUILDS ITSELF" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("region", { name: "Caught at the Gate" }),
+    page.getByRole("region", { name: "Live Votes" }),
   ).toBeVisible();
   await expect(page.getByRole("region", { name: "Live Diff" })).toBeVisible();
   await expect(

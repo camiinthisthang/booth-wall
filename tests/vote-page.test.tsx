@@ -1,4 +1,11 @@
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Vote } from "@/app/vote/vote";
 
@@ -51,5 +58,19 @@ describe("Vote page", () => {
         screen.getByText("This booth has shipped 7 changes today"),
       ).toBeInTheDocument();
     });
+  });
+
+  it("restores and remembers the optional screen name", async () => {
+    localStorage.setItem("booth-screen-name", "maya");
+    render(<Vote />);
+
+    const input = await screen.findByRole("textbox", {
+      name: /screen name/i,
+    });
+    await waitFor(() => expect(input).toHaveValue("maya"));
+    expect(input).toHaveAttribute("maxlength", "20");
+
+    fireEvent.change(input, { target: { value: "nova" } });
+    expect(localStorage.getItem("booth-screen-name")).toBe("nova");
   });
 });
