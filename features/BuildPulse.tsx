@@ -154,7 +154,7 @@ export function BuildPulse() {
         flexDirection: "column",
         justifyContent: "space-between",
         gap: "0.4em",
-        padding: "7% 8%",
+        padding: "5% 8%",
         border: `1px solid ${active ? "#ff4b24" : "#262626"}`,
         background: "#0d0d0d",
         color: "#f2efe7",
@@ -177,13 +177,22 @@ export function BuildPulse() {
       </p>
       <div
         aria-hidden="true"
+        style={{
+          flex: "1 1 auto",
+          minHeight: 0,
+          minWidth: 0,
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
+      <div
         style={
           {
             position: "relative",
-            alignSelf: "center",
-            width: "min(46cqmin, 60cqh)",
+            height: "100%",
+            maxHeight: "100%",
+            maxWidth: "100%",
             aspectRatio: "1",
-            flex: "0 0 auto",
             display: "grid",
             placeItems: "center",
             "--pulse-ms": `${pulseMs}ms`,
@@ -217,6 +226,7 @@ export function BuildPulse() {
             background: active ? "#ff4b24" : pulse.kind === "idle" ? "#6e6e6e" : "#2e2e2e",
           }}
         />
+      </div>
       </div>
       <div aria-live="polite" style={{ display: "flex", flexDirection: "column", gap: "0.25em", minWidth: 0 }}>
         <p

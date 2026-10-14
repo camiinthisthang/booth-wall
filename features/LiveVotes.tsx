@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createQrMatrix, QR_QUIET_ZONE, qrSvgPath } from "@/lib/qr-code";
 import { formatVoteEvent, type VoteEvent } from "@/lib/vote-events";
 
 const POLL_MS = 5_000;
+const VOTE_URL = "https://booth-wall.vercel.app/vote";
 const mono = "ui-monospace, SFMono-Regular, Menlo, monospace";
 
 type VoteEventsResponse = {
@@ -28,6 +30,38 @@ const styles = `
   }
 }
 `;
+
+function VoteQr() {
+  const matrix = useMemo(() => createQrMatrix(VOTE_URL), []);
+  const size = matrix.size + QR_QUIET_ZONE * 2;
+  const path = useMemo(() => qrSvgPath(matrix), [matrix]);
+
+  return (
+    <div
+      data-qr-value={VOTE_URL}
+      style={{
+        flex: "0 0 auto",
+        alignSelf: "center",
+        height: "100%",
+        maxHeight: "100%",
+        maxWidth: "42%",
+        aspectRatio: "1",
+        borderRadius: "0.3em",
+        overflow: "hidden",
+      }}
+    >
+      <svg
+        role="img"
+        aria-label={`Scan to open ${VOTE_URL}`}
+        viewBox={`0 0 ${size} ${size}`}
+        style={{ display: "block", width: "100%", height: "100%" }}
+      >
+        <rect width={size} height={size} fill="#ffffff" />
+        <path d={path} fill="#080808" />
+      </svg>
+    </div>
+  );
+}
 
 export function LiveVotes() {
   const [data, setData] = useState<VoteEventsResponse | null>(null);
@@ -74,10 +108,11 @@ export function LiveVotes() {
       aria-label="Live Votes"
       style={{
         height: "100%",
-        display: "grid",
-        gridTemplateRows: "auto auto 1fr",
-        gap: "0.42em",
-        padding: "7% 8%",
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "stretch",
+        gap: "5%",
+        padding: "6% 6%",
         border: `1px solid ${data?.events.length ? "#ff4b24" : "#262626"}`,
         background: "#0d0d0d",
         color: "#f2efe7",
@@ -85,6 +120,16 @@ export function LiveVotes() {
       }}
     >
       <style>{styles}</style>
+      <div
+        style={{
+          flex: "1 1 auto",
+          minWidth: 0,
+          minHeight: 0,
+          display: "grid",
+          gridTemplateRows: "auto auto 1fr",
+          gap: "0.42em",
+        }}
+      >
       <div
         style={{
           display: "flex",
@@ -97,10 +142,11 @@ export function LiveVotes() {
           style={{
             margin: 0,
             fontFamily: mono,
-            fontSize: "clamp(0.45rem, min(0.62vw, 1.1vh), 1.2rem)",
+            fontSize: "clamp(0.45rem, min(0.55vw, 0.95vh), 1.2rem)",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: "#ff6a3d",
+            whiteSpace: "nowrap",
           }}
         >
           Live Votes
@@ -109,7 +155,7 @@ export function LiveVotes() {
           style={{
             margin: 0,
             fontFamily: mono,
-            fontSize: "clamp(0.5rem, min(0.72vw, 1.28vh), 1.35rem)",
+            fontSize: "clamp(0.5rem, min(0.62vw, 1.1vh), 1.35rem)",
             color: "#ffb627",
             whiteSpace: "nowrap",
           }}
@@ -120,9 +166,9 @@ export function LiveVotes() {
       <p
         style={{
           margin: 0,
-          fontSize: "clamp(0.68rem, min(1.05vw, 1.85vh), 2rem)",
+          fontSize: "clamp(0.68rem, min(0.95vw, 1.65vh), 2rem)",
           fontWeight: 650,
-          lineHeight: 1,
+          lineHeight: 1.05,
         }}
       >
         The crowd picks the build.
@@ -160,6 +206,8 @@ export function LiveVotes() {
           </p>
         )}
       </div>
+      </div>
+      <VoteQr />
     </div>
   );
 }
