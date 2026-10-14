@@ -1,4 +1,5 @@
 import {
+  isCanceledLinearState,
   linearGraphQL,
   normalizeLinearState,
   type BoardLane,
@@ -199,8 +200,11 @@ async function getTimelines(): Promise<TicketTimeline[]> {
     { teamId },
   );
   if (!data.team) throw new Error("Configured Linear team was not found");
+  const visible = data.team.issues.nodes.filter(
+    (issue) => !isCanceledLinearState(issue.state.name, issue.state.type),
+  );
   return Promise.all(
-    data.team.issues.nodes.map(async (issue) => {
+    visible.map(async (issue) => {
       const historyData = await linearGraphQL<{
         issue: { history: { nodes: LinearHistoryNode[] } } | null;
       }>(

@@ -33,6 +33,12 @@ type LinearIssueNode = {
 
 const LINEAR_ENDPOINT = "https://api.linear.app/graphql";
 
+// Canceled tickets are hidden from the wall entirely rather than given a lane,
+// so callers must drop them before normalizing.
+export function isCanceledLinearState(name: string, type = ""): boolean {
+  return type.toLowerCase() === "canceled" || /cancel/i.test(name);
+}
+
 export function normalizeLinearState(name: string, type = ""): BoardLane {
   const value = `${name} ${type}`.toLowerCase();
   if (value.includes("review")) return "In Review";
@@ -50,11 +56,7 @@ export function normalizeLinearState(name: string, type = ""): BoardLane {
   ) {
     return "In Progress";
   }
-  if (
-    value.includes("done") ||
-    value.includes("complete") ||
-    value.includes("cancel")
-  ) {
+  if (value.includes("done") || value.includes("complete")) {
     return "Done";
   }
   return "Backlog";
@@ -109,17 +111,21 @@ export async function getBoothIssues(): Promise<BoothIssue[]> {
   );
   if (!data.team) throw new Error("Configured Linear team was not found");
 
-  return data.team.issues.nodes.map((issue) => ({
-    id: issue.id,
-    identifier: issue.identifier,
-    title: issue.title,
-    createdAt: issue.createdAt,
-    updatedAt: issue.updatedAt,
-    state: normalizeLinearState(issue.state.name, issue.state.type),
-    stateId: issue.state.id,
-    labels: issue.labels?.nodes?.map((label) => label.name) ?? [],
-    assignee: issue.assignee?.name ?? null,
-  }));
+  return data.team.issues.nodes
+    .filter(
+      (issue) => !isCanceledLinearState(issue.state.name, issue.state.type),
+    )
+    .map((issue) => ({
+      id: issue.id,
+      identifier: issue.identifier,
+      title: issue.title,
+      createdAt: issue.createdAt,
+      updatedAt: issue.updatedAt,
+      state: normalizeLinearState(issue.state.name, issue.state.type),
+      stateId: issue.state.id,
+      labels: issue.labels?.nodes?.map((label) => label.name) ?? [],
+      assignee: issue.assignee?.name ?? null,
+    }));
 }
 
 export function agentDisplay(issue: BoothIssue): string | null {
