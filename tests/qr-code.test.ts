@@ -1,6 +1,10 @@
 import jsQR from "jsqr";
 import { describe, expect, it } from "vitest";
-import { createQrMatrix, renderQrPixels } from "@/lib/qr-code";
+import {
+  createQrMatrix,
+  QR_MAX_VERSION,
+  renderQrPixels,
+} from "@/lib/qr-code";
 import { QR_DESIGNS, scanUrl } from "@/lib/qr-designs";
 
 describe("Start building QR codes", () => {
@@ -8,14 +12,16 @@ describe("Start building QR codes", () => {
     ["production", "https://booth-wall.vercel.app"],
     [
       "preview",
-      "https://booth-wall-git-droid-booth-22.example.vercel.app",
+      "https://booth-wall-git-droid-booth-22-buil-1578a9-somarcamilas-projects.vercel.app",
     ],
   ] as const)(
-    "decodes every design against the %s deployment host",
+    "keeps every design scannable on the %s deployment host",
     (_environment, origin) => {
       for (const design of QR_DESIGNS) {
         const expected = scanUrl(origin, design.key);
-        const pixels = renderQrPixels(createQrMatrix(expected), 10);
+        const matrix = createQrMatrix(expected);
+        expect(matrix.version).toBeLessThanOrEqual(QR_MAX_VERSION);
+        const pixels = renderQrPixels(matrix, 3);
         const decoded = jsQR(pixels.data, pixels.width, pixels.height, {
           inversionAttempts: "dontInvert",
         });

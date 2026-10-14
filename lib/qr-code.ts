@@ -1,8 +1,13 @@
 import QRCode from "qrcode";
 
 export const QR_QUIET_ZONE = 4;
+// The wall tile renders the QR at about 7rem, so beyond version 5 (37x37)
+// the modules get too small for phones to resolve from across the booth.
+export const QR_MAX_VERSION = 5;
+const ERROR_CORRECTION_LEVELS = ["H", "Q", "M", "L"] as const;
 
 export interface QrMatrix {
+  version: number;
   size: number;
   data: Uint8Array;
 }
@@ -14,11 +19,20 @@ export interface QrPixels {
 }
 
 export function createQrMatrix(value: string): QrMatrix {
-  const code = QRCode.create(value, { errorCorrectionLevel: "H" });
+  const code = createDensityCappedCode(value);
   return {
+    version: code.version,
     size: code.modules.size,
     data: Uint8Array.from(code.modules.data),
   };
+}
+
+function createDensityCappedCode(value: string) {
+  for (const errorCorrectionLevel of ERROR_CORRECTION_LEVELS) {
+    const code = QRCode.create(value, { errorCorrectionLevel });
+    if (code.version <= QR_MAX_VERSION) return code;
+  }
+  return QRCode.create(value, { errorCorrectionLevel: "L" });
 }
 
 export function qrSvgPath(matrix: QrMatrix) {
