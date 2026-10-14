@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type CSSProperties,
 } from "react";
 import {
@@ -22,6 +23,15 @@ const ROTATION_MS = 12_000;
 const SCAN_POLL_MS = 5_000;
 const CANONICAL_ORIGIN = "https://booth-wall.vercel.app";
 const mono = "ui-monospace, SFMono-Regular, Menlo, monospace";
+const subscribeToOrigin = () => () => {};
+
+function useScanOrigin() {
+  return useSyncExternalStore(
+    subscribeToOrigin,
+    () => window.location.origin,
+    () => CANONICAL_ORIGIN,
+  );
+}
 
 const styles = `
 .booth-start-building {
@@ -510,6 +520,7 @@ export function StartBuilding() {
   const [designIndex, setDesignIndex] = useState(0);
   const [totalToday, setTotalToday] = useState(0);
   const reducedMotion = useReducedMotion();
+  const scanOrigin = useScanOrigin();
   const design = QR_DESIGNS[designIndex];
 
   useEffect(() => {
@@ -581,7 +592,7 @@ export function StartBuilding() {
           </div>
         </div>
       </div>
-      <QrCode value={scanUrl(CANONICAL_ORIGIN, design.key)} />
+      <QrCode value={scanUrl(scanOrigin, design.key)} />
     </div>
   );
 }

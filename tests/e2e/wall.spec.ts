@@ -22,6 +22,10 @@ test("wall renders replacement features and pixel assembly line without runtime 
   await expect(
     page.getByRole("img", { name: /scan to open .*\/go\/detected/i }),
   ).toBeVisible();
+  await expect(page.locator(".booth-start-building__qr")).toHaveAttribute(
+    "data-qr-value",
+    "http://127.0.0.1:3000/go/detected",
+  );
   await expect(page.getByText("Factory Floor", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("img", { name: /pixel art assembly line/i }),
