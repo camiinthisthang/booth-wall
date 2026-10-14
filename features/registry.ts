@@ -7,8 +7,8 @@ import { DroidFacts } from "./DroidFacts";
 import { LiveDiff } from "./LiveDiff";
 import { LiveVotes } from "./LiveVotes";
 import { PixelMascot } from "./PixelMascot";
-import { ReactionMeter } from "./ReactionMeter";
 import { ShippedTicker } from "./ShippedTicker";
+import { StartBuilding } from "./StartBuilding";
 import { TicketToLive } from "./TicketToLive";
 import { VisitorClock } from "./VisitorClock";
 
@@ -29,7 +29,7 @@ export const featureRegistry: FeatureRegistration[] = [
   { key: "ambient-particles", title: "Ambient particles", placement: { column: "4 / 6", row: "2" }, Component: AmbientParticles },
   { key: "shipped-ticker", title: "Shipped ticker", placement: { column: "1 / 3", row: "3" }, Component: ShippedTicker },
   { key: "booth-status", title: "Booth status", placement: { column: "3", row: "3" }, Component: BoothStatus },
-  { key: "reaction-meter", title: "Reaction meter", placement: { column: "4", row: "3" }, Component: ReactionMeter },
+  { key: "start-building", title: "Start building", placement: { column: "4", row: "3" }, Component: StartBuilding },
   { key: "live-diff", title: "Live Diff", placement: { column: "5", row: "3" }, Component: LiveDiff },
   { key: "factory-floor", title: "Factory Floor", placement: { column: "1 / 6", row: "4" }, Component: PixelMascot },
 ];
