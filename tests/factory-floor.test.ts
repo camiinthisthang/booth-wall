@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildFactoryFloorEvents,
-  stationForTicket,
+  detailForTicket,
+  featureIndexForTicket,
+  machineForTicket,
 } from "@/features/PixelMascot";
 import type { TicketPullRequest } from "@/lib/github";
 import type { BoothIssue, BoardLane } from "@/lib/linear";
@@ -34,27 +36,45 @@ function pull(
     createdAt: "2026-10-11T10:10:00Z",
     updatedAt: "2026-10-11T10:20:00Z",
     mergedAt: state === "merged" ? "2026-10-11T10:30:00Z" : null,
+    files: ["features/PixelMascot.tsx"],
+    commits: ["Build the pixel assembly line"],
+    checkNames: ["quality"],
   };
 }
 
 describe("Factory Floor pipeline", () => {
-  it("maps real Linear and GitHub state to stations", () => {
-    expect(stationForTicket(issue("Backlog"))).toBe("Backlog");
-    expect(stationForTicket(issue("Todo"))).toBe("Todo");
-    expect(stationForTicket(issue("In Progress"))).toBe("In Progress");
-    expect(stationForTicket(issue("In Review"))).toBe("PR Open");
-    expect(stationForTicket(issue("In Progress"), pull("open", "none"))).toBe(
-      "PR Open",
+  it("maps real Linear and GitHub state to assembly machines", () => {
+    expect(machineForTicket(issue("Backlog"))).toBe("intake");
+    expect(machineForTicket(issue("Todo"))).toBe("intake");
+    expect(machineForTicket(issue("In Progress"))).toBe("workbench");
+    expect(machineForTicket(issue("In Review"))).toBe("review");
+    expect(machineForTicket(issue("In Progress"), pull("open", "none"))).toBe(
+      "review",
     );
     expect(
-      stationForTicket(issue("In Progress"), pull("open", "passed")),
-    ).toBe("Checks");
+      machineForTicket(issue("In Progress"), pull("open", "pending")),
+    ).toBe("test");
     expect(
-      stationForTicket(issue("In Review"), pull("merged", "none")),
-    ).toBe("Merged");
-    expect(stationForTicket(issue("Done"), pull("merged", "none"))).toBe(
-      "Live",
+      machineForTicket(issue("In Progress"), pull("open", "failed")),
+    ).toBe("workbench");
+    expect(
+      machineForTicket(issue("In Review"), pull("merged", "none")),
+    ).toBe("launch");
+    expect(machineForTicket(issue("Done"), pull("merged", "none"))).toBe(
+      "launch",
     );
+  });
+
+  it("uses real PR file data for Workbench speech", () => {
+    expect(detailForTicket(issue("In Progress"), pull("open", "pending"))).toBe(
+      "Changing PixelMascot.tsx",
+    );
+  });
+
+  it("maps seeded feature tickets to their wall tiles", () => {
+    expect(featureIndexForTicket("BOOTH-1")).toBe(0);
+    expect(featureIndexForTicket("BOOTH-12")).toBe(11);
+    expect(featureIndexForTicket("BOOTH-20")).toBeUndefined();
   });
 
   it("builds a newest-first event ticker", () => {

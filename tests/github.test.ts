@@ -55,13 +55,19 @@ describe("GitHub summary", () => {
   it("reduces check runs to a wall-friendly state", () => {
     expect(summarizeCheckRuns([])).toBe("none");
     expect(
-      summarizeCheckRuns([{ status: "in_progress", conclusion: null }]),
+      summarizeCheckRuns([
+        { name: "quality", status: "in_progress", conclusion: null },
+      ]),
     ).toBe("pending");
     expect(
-      summarizeCheckRuns([{ status: "completed", conclusion: "success" }]),
+      summarizeCheckRuns([
+        { name: "quality", status: "completed", conclusion: "success" },
+      ]),
     ).toBe("passed");
     expect(
-      summarizeCheckRuns([{ status: "completed", conclusion: "failure" }]),
+      summarizeCheckRuns([
+        { name: "quality", status: "completed", conclusion: "failure" },
+      ]),
     ).toBe("failed");
   });
 });

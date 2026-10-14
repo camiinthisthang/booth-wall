@@ -22,6 +22,9 @@ export interface TicketPullRequest {
   createdAt: string;
   updatedAt: string;
   mergedAt: string | null;
+  files: string[];
+  commits: string[];
+  checkNames: string[];
 }
 
 export interface GitHubSummary {
@@ -39,6 +42,7 @@ export interface GitHubSummary {
 }
 
 type GitHubCheckRun = {
+  name: string;
   status: "queued" | "in_progress" | "completed" | "waiting" | "pending";
   conclusion:
     | "success"
@@ -52,6 +56,15 @@ type GitHubCheckRun = {
     | "stale"
     | null;
 };
+
+const SUMMARY_CACHE_MS = 30_000;
+let summaryCache:
+  | {
+      repository: string;
+      expiresAt: number;
+      value: Promise<GitHubSummary>;
+    }
+  | undefined;
 
 function sameUtcDay(value: string, now: Date): boolean {
   return value.slice(0, 10) === now.toISOString().slice(0, 10);
@@ -131,15 +144,57 @@ async function getPullRequestChecks(
   repository: string,
   pull: GitHubPullRequest,
   headers: HeadersInit,
-): Promise<GitHubCheckState> {
-  if (pull.state !== "open" || !pull.head?.sha) return "none";
+): Promise<{ state: GitHubCheckState; names: string[] }> {
+  if (pull.state !== "open" || !pull.head?.sha) {
+    return { state: "none", names: [] };
+  }
   const response = await fetch(
     `https://api.github.com/repos/${repository}/commits/${pull.head.sha}/check-runs?per_page=100`,
     { headers, cache: "no-store" },
   );
-  if (!response.ok) return "none";
+  if (!response.ok) return { state: "none", names: [] };
   const payload = (await response.json()) as { check_runs?: GitHubCheckRun[] };
-  return summarizeCheckRuns(payload.check_runs ?? []);
+  const runs = payload.check_runs ?? [];
+  return {
+    state: summarizeCheckRuns(runs),
+    names: runs.map((run) => run.name).slice(0, 6),
+  };
+}
+
+async function getPullRequestDetails(
+  repository: string,
+  pull: GitHubPullRequest,
+  headers: HeadersInit,
+) {
+  if (pull.state !== "open") {
+    return {
+      checks: { state: "none" as const, names: [] as string[] },
+      files: [] as string[],
+      commits: [] as string[],
+    };
+  }
+  const [checks, filesResponse, commitsResponse] = await Promise.all([
+    getPullRequestChecks(repository, pull, headers),
+    fetch(
+      `https://api.github.com/repos/${repository}/pulls/${pull.number}/files?per_page=6`,
+      { headers, cache: "no-store" },
+    ),
+    fetch(
+      `https://api.github.com/repos/${repository}/pulls/${pull.number}/commits?per_page=6`,
+      { headers, cache: "no-store" },
+    ),
+  ]);
+  const files = filesResponse.ok
+    ? ((await filesResponse.json()) as Array<{ filename: string }>).map(
+        (file) => file.filename,
+      )
+    : [];
+  const commits = commitsResponse.ok
+    ? ((await commitsResponse.json()) as Array<{
+        commit: { message: string };
+      }>).map((entry) => entry.commit.message.split("\n")[0])
+    : [];
+  return { checks, files, commits };
 }
 
 export async function getGitHubSummary(): Promise<GitHubSummary> {
@@ -160,36 +215,64 @@ export async function getGitHubSummary(): Promise<GitHubSummary> {
   if (process.env.GITHUB_TOKEN) {
     headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   }
-  const response = await fetch(
-    `https://api.github.com/repos/${repository}/pulls?state=all&sort=updated&direction=desc&per_page=100`,
-    { headers, cache: "no-store" },
-  );
-  if (!response.ok) throw new Error(`GitHub request failed (${response.status})`);
-  const pulls = (await response.json()) as GitHubPullRequest[];
-  const summary = summarizePullRequests(pulls);
-  const ticketPulls = pulls
-    .map((pull) => ({ pull, identifier: extractTicketIdentifier(pull) }))
-    .filter(
-      (
-        entry,
-      ): entry is { pull: GitHubPullRequest; identifier: string } =>
-        entry.identifier !== null &&
-        (entry.pull.state === "open" || entry.pull.merged_at !== null),
-    )
-    .slice(0, 12);
+  if (
+    summaryCache?.repository === repository &&
+    summaryCache.expiresAt > Date.now()
+  ) {
+    return summaryCache.value;
+  }
 
-  summary.ticketPullRequests = await Promise.all(
-    ticketPulls.map(async ({ pull, identifier }) => ({
-      identifier,
-      number: pull.number,
-      title: pull.title,
-      url: pull.html_url,
-      state: pull.merged_at ? "merged" : "open",
-      checks: await getPullRequestChecks(repository, pull, headers),
-      createdAt: pull.created_at ?? pull.updated_at,
-      updatedAt: pull.updated_at,
-      mergedAt: pull.merged_at,
-    })),
-  );
-  return summary;
+  const value = (async () => {
+    const response = await fetch(
+      `https://api.github.com/repos/${repository}/pulls?state=all&sort=updated&direction=desc&per_page=100`,
+      { headers, cache: "no-store" },
+    );
+    if (!response.ok) {
+      throw new Error(`GitHub request failed (${response.status})`);
+    }
+    const pulls = (await response.json()) as GitHubPullRequest[];
+    const summary = summarizePullRequests(pulls);
+    const ticketPulls = pulls
+      .map((pull) => ({ pull, identifier: extractTicketIdentifier(pull) }))
+      .filter(
+        (
+          entry,
+        ): entry is { pull: GitHubPullRequest; identifier: string } =>
+          entry.identifier !== null &&
+          (entry.pull.state === "open" || entry.pull.merged_at !== null),
+      )
+      .slice(0, 12);
+
+    summary.ticketPullRequests = await Promise.all(
+      ticketPulls.map(async ({ pull, identifier }) => {
+        const details = await getPullRequestDetails(repository, pull, headers);
+        return {
+          identifier,
+          number: pull.number,
+          title: pull.title,
+          url: pull.html_url,
+          state: pull.merged_at ? ("merged" as const) : ("open" as const),
+          checks: details.checks.state,
+          createdAt: pull.created_at ?? pull.updated_at,
+          updatedAt: pull.updated_at,
+          mergedAt: pull.merged_at,
+          files: details.files,
+          commits: details.commits,
+          checkNames: details.checks.names,
+        };
+      }),
+    );
+    return summary;
+  })();
+  summaryCache = {
+    repository,
+    expiresAt: Date.now() + SUMMARY_CACHE_MS,
+    value,
+  };
+  try {
+    return await value;
+  } catch (error) {
+    summaryCache = undefined;
+    throw error;
+  }
 }

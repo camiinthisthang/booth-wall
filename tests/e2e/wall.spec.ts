@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("wall renders all three replacement features without runtime errors", async ({
+test("wall renders replacement features and pixel assembly line without runtime errors", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -18,7 +18,10 @@ test("wall renders all three replacement features without runtime errors", async
   ).toBeVisible();
   await expect(page.getByText("Factory Floor", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("region", { name: /Backlog, \d+ tickets/ }),
+    page.getByRole("img", { name: /pixel art assembly line/i }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: /Intake Chute, \d+ tickets/ }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
