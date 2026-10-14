@@ -16,18 +16,34 @@ describe("tracked QR redirect", () => {
     recordScan.mockResolvedValue(1);
   });
 
-  it("counts an allowlisted design and redirects with campaign parameters", async () => {
-    const response = await GET(new Request("https://booth.example/go/terrain"), {
-      params: Promise.resolve({ design: "terrain" }),
-    });
+  it.each([
+    ["detected", "https://factory.com/?utm_source=booth&utm_content=detected"],
+    [
+      "wireframe",
+      "https://factory.com/enterprise?utm_source=booth&utm_content=wireframe",
+    ],
+    [
+      "terrain",
+      "https://factory.com/contact?utm_source=booth&utm_content=terrain",
+    ],
+    [
+      "session",
+      "https://docs.factory.com/?utm_source=booth&utm_content=session",
+    ],
+  ] as const)(
+    "counts the %s design and redirects to its Factory destination",
+    async (design, destination) => {
+      const response = await GET(
+        new Request(`https://booth.example/go/${design}`),
+        { params: Promise.resolve({ design }) },
+      );
 
-    expect(recordScan).toHaveBeenCalledWith("terrain", expect.any(Number));
-    expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(
-      "https://app.factory.ai/?utm_source=booth&utm_content=terrain",
-    );
-    expect(response.headers.get("cache-control")).toBe("no-store");
-  });
+      expect(recordScan).toHaveBeenCalledWith(design, expect.any(Number));
+      expect(response.status).toBe(307);
+      expect(response.headers.get("location")).toBe(destination);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+    },
+  );
 
   it("rejects unknown designs without touching the counter", async () => {
     const response = await GET(

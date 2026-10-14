@@ -40,8 +40,17 @@ describe("scan tracking", () => {
     expect(scanUrl("https://example.com/wall", "session")).toBe(
       "https://example.com/go/session",
     );
+    expect(factoryRedirectUrl("detected").toString()).toBe(
+      "https://factory.com/?utm_source=booth&utm_content=detected",
+    );
+    expect(factoryRedirectUrl("wireframe").toString()).toBe(
+      "https://factory.com/enterprise?utm_source=booth&utm_content=wireframe",
+    );
+    expect(factoryRedirectUrl("terrain").toString()).toBe(
+      "https://factory.com/contact?utm_source=booth&utm_content=terrain",
+    );
     expect(factoryRedirectUrl("session").toString()).toBe(
-      "https://app.factory.ai/?utm_source=booth&utm_content=session",
+      "https://docs.factory.com/?utm_source=booth&utm_content=session",
     );
   });
 });

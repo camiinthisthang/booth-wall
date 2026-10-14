@@ -7,6 +7,13 @@ export const QR_DESIGN_KEYS = [
 
 export type QrDesignKey = (typeof QR_DESIGN_KEYS)[number];
 
+const FACTORY_DESTINATIONS: Record<QrDesignKey, string> = {
+  detected: "https://factory.com/",
+  wireframe: "https://factory.com/enterprise",
+  terrain: "https://factory.com/contact",
+  session: "https://docs.factory.com/",
+};
+
 export interface QrDesign {
   key: QrDesignKey;
   name: string;
@@ -49,7 +56,7 @@ export function scanUrl(origin: string, design: QrDesignKey) {
 }
 
 export function factoryRedirectUrl(design: QrDesignKey) {
-  const destination = new URL("https://app.factory.ai");
+  const destination = new URL(FACTORY_DESTINATIONS[design]);
   destination.searchParams.set("utm_source", "booth");
   destination.searchParams.set("utm_content", design);
   return destination;
